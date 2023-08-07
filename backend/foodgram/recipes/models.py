@@ -139,7 +139,7 @@ class IngredientRecipe(models.Model):
             MaxValueValidator(
                 MAX_VALUE_AMOUNT,
                 message='Слишком много!'
-            )]
+        )]
     )
 
     class Meta:
