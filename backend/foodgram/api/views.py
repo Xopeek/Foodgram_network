@@ -1,22 +1,24 @@
 from io import BytesIO
 
-import rest_framework.exceptions
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from fpdf import FPDF
-
 from rest_framework.response import Response
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticatedOrReadOnly, SAFE_METHODS
 
+from foodgram.settings import (PDF_SIZE_FONT,
+                               CELL_WIDTH,
+                               CELL_HEIGHT,
+                               CELL_AUTO_WIDTH)
 from .pagination import CustomPagination
 from .services import RecipeFilter
 from recipes.models import Recipe, Tag, Ingredient, ShoppingCart, Favorite
 from recipes.serializers import (TagSerializer, IngredientSerializer,
                                  WriteRecipeSerializer, RecipeCreateSerializer,
-                                 RecipesSerializer)
+                                 FavoriteSerializer, ShoppingCartSerializer)
 
 
 class TagsViewSet(viewsets.ReadOnlyModelViewSet):
@@ -54,20 +56,12 @@ class RecipeViewSet(viewsets.ModelViewSet):
             pk=kwargs.get('pk')
         )
         if self.request.method == 'POST':
-            if ShoppingCart.objects.filter(
-                user=self.request.user,
-                recipe=recipe
-            ).exists():
-                return Response(
-                    {'ERROR': 'Уже в корзине'},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-            ShoppingCart.objects.create(
+            shopping_cart = ShoppingCart.objects.create(
                 user=self.request.user,
                 recipe=recipe
             )
-            serializer = RecipesSerializer(
-                recipe,
+            serializer = ShoppingCartSerializer(
+                shopping_cart,
                 context={'request': request}
             )
             return Response(
@@ -75,21 +69,19 @@ class RecipeViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_201_CREATED
             )
         if self.request.method == 'DELETE':
-            if not ShoppingCart.objects.filter(
-                user=request.user,
-                recipe=recipe
-            ).exists():
-                raise rest_framework.exceptions.ValidationError(
-                    'E:T'
+            try:
+                user = request.user
+                shop_cart = user.shop_cart.first()
+                if shop_cart is not None:
+                    shop_cart.delete()
+                return Response(
+                    status=status.HTTP_204_NO_CONTENT
                 )
-            get_object_or_404(
-                ShoppingCart,
-                user=request.user,
-                recipe=recipe
-            ).delete()
-            return Response(
-                status=status.HTTP_204_NO_CONTENT
-            )
+            except Exception:
+                return Response(
+                    {'ERROR': 'Корзина не найдена'},
+                    status=status.HTTP_404_NOT_FOUND
+                )
 
     @action(
         detail=True,
@@ -101,20 +93,12 @@ class RecipeViewSet(viewsets.ModelViewSet):
             pk=kwargs.get('pk')
         )
         if self.request.method == 'POST':
-            if Favorite.objects.filter(
-                user=self.request.user,
-                recipe=recipe
-            ).exists():
-                return Response(
-                    {'ERROR': 'Уже в избранном'},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-            Favorite.objects.create(
+            favorite = Favorite.objects.create(
                 user=self.request.user,
                 recipe=recipe
             )
-            serializer = RecipesSerializer(
-                recipe,
+            serializer = FavoriteSerializer(
+                favorite,
                 context={'request': request}
             )
             return Response(
@@ -123,13 +107,13 @@ class RecipeViewSet(viewsets.ModelViewSet):
             )
         elif self.request.method == 'DELETE':
             try:
-                favorite = get_object_or_404(
-                    Favorite,
-                    user=request.user,
-                    recipe=recipe
+                user = request.user
+                favorite = user.favorite.first()
+                if favorite is not None:
+                    favorite.delete()
+                return Response(
+                    status=status.HTTP_204_NO_CONTENT
                 )
-                favorite.delete()
-                return Response(status=status.HTTP_204_NO_CONTENT)
             except Exception:
                 return Response(
                     {'ERROR': 'Запись не найдена'},
@@ -145,16 +129,26 @@ class RecipeViewSet(viewsets.ModelViewSet):
         buffer = BytesIO()
         pdf_file = FPDF()
         pdf_file.add_page()
-        pdf_file.add_font("DejaVuSans", fname="api/DejaVuSans.ttf", uni=True)
-        pdf_file.set_font("DejaVuSans", size=12)
-        pdf_file.cell(200, 10, 'Shopping List', ln=True, align="C")
+        pdf_file.add_font('DejaVuSans', fname='api/DejaVuSans.ttf', uni=True)
+        pdf_file.set_font('DejaVuSans', size=PDF_SIZE_FONT)
+        pdf_file.cell(
+            CELL_WIDTH,
+            CELL_HEIGHT,
+            'Shopping List',
+            ln=True,
+            align='C'
+        )
         for item in item_shop_cart:
             ingredients = item.recipe.ingredient_list.all()
             for ingredient in ingredients:
                 ingredient_text = (f'{ingredient.amount}'
                                    f' {ingredient.ingredient.measurement_unit}'
                                    f' - {ingredient.ingredient.name}')
-                pdf_file.multi_cell(0, 10, txt=ingredient_text)
+                pdf_file.multi_cell(
+                    CELL_AUTO_WIDTH,
+                    CELL_HEIGHT,
+                    txt=ingredient_text
+                )
         buffer.write(pdf_file.output(dest='S'))
         pdf_file = buffer.getvalue()
         buffer.close()

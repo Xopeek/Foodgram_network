@@ -1,6 +1,12 @@
-from django.core.validators import RegexValidator, MinValueValidator
+from django.core.validators import (RegexValidator,
+                                    MinValueValidator,
+                                    MaxValueValidator)
 from django.db import models
 
+from foodgram.settings import (MIN_VALUE_COOKING_TIME,
+                               MAX_VALUE_COOKING_TIME,
+                               MIN_VALUE_AMOUNT,
+                               MAX_VALUE_AMOUNT)
 from users.models import User
 
 
@@ -62,7 +68,7 @@ class Recipe(models.Model):
         User,
         on_delete=models.CASCADE,
         verbose_name='Автор',
-        related_name='Recipes',
+        related_name='author',
     )
     name = models.CharField(
         'Название',
@@ -70,7 +76,7 @@ class Recipe(models.Model):
     )
     image = models.ImageField(
         'Картинка',
-        upload_to='recipes/'
+        upload_to='recipes/',
     )
     text = models.TextField(
         'Описание'
@@ -89,8 +95,12 @@ class Recipe(models.Model):
     cooking_time = models.PositiveSmallIntegerField(
         'Время приготовления',
         validators=[MinValueValidator(
-            1,
+            MIN_VALUE_COOKING_TIME,
             message='Время приготовления не может быть меньше минуты!'
+        ),
+            MaxValueValidator(
+                MAX_VALUE_COOKING_TIME,
+                message='Слишком большое время приготовления!'
         )]
     )
     pub_date = models.DateTimeField(
@@ -123,12 +133,17 @@ class IngredientRecipe(models.Model):
     amount = models.PositiveSmallIntegerField(
         'Колличество ингредиента',
         validators=[MinValueValidator(
-            1,
+            MIN_VALUE_AMOUNT,
             message='Как минимум 1!'
-        )]
+        ),
+            MaxValueValidator(
+                MAX_VALUE_AMOUNT,
+                message='Слишком много!'
+            )]
     )
 
     class Meta:
+        ordering = ('recipe',)
         verbose_name = 'Ингредиент в рецепте'
         verbose_name_plural = 'Ингредиенты в рецептах'
 
@@ -154,8 +169,12 @@ class Favorite(models.Model):
     )
 
     class Meta:
+        ordering = ('user', )
         verbose_name = 'Избранное'
         verbose_name_plural = 'Избранное'
+
+    def __str__(self):
+        return f'{self.user} > {self.recipe}'
 
 
 class ShoppingCart(models.Model):
@@ -173,5 +192,9 @@ class ShoppingCart(models.Model):
     )
 
     class Meta:
+        ordering = ('user',)
         verbose_name = 'Корзина'
         verbose_name_plural = 'Корзина'
+
+    def __str__(self):
+        return f'{self.user} > {self.recipe}'
