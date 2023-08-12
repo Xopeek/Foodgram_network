@@ -38,8 +38,7 @@ class RecipeFilter(rest_framework.FilterSet):
         ).values_list('recipe__id', flat=True)
         if strtobool(value):
             return queryset.filter(id__in=favorites)
-        else:
-            return queryset.exclude(id__in=favorites)
+        return queryset.exclude(id__in=favorites)
 
     def filter_is_in_shopping_cart(self, queryset, name, value):
 
@@ -51,8 +50,7 @@ class RecipeFilter(rest_framework.FilterSet):
         ).values_list('recipe__id', flat=True)
         if strtobool(value):
             return queryset.filter(id__in=shopping_cart)
-        else:
-            return queryset.exclude(id__in=shopping_cart)
+        return queryset.exclude(id__in=shopping_cart)
 
     class Meta:
         model = Recipe

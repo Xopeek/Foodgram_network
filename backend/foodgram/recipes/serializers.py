@@ -2,10 +2,7 @@ from djoser.serializers import UserSerializer
 from rest_framework import serializers, exceptions
 from drf_base64.fields import Base64ImageField
 
-from foodgram.settings import (MIN_VALUE_AMOUNT,
-                               MAX_VALUE_AMOUNT,
-                               MIN_VALUE_COOKING_TIME,
-                               MAX_VALUE_COOKING_TIME)
+from django.conf import settings
 from .models import (Recipe,
                      Ingredient,
                      Tag,
@@ -104,8 +101,8 @@ class CreateIngredientSerializer(serializers.ModelSerializer):
     """Создание ингредиента для рецепта."""
     id = serializers.IntegerField()
     amount = serializers.IntegerField(
-        min_value=MIN_VALUE_AMOUNT,
-        max_value=MAX_VALUE_AMOUNT
+        min_value=settings.MIN_VALUE_AMOUNT,
+        max_value=settings.MAX_VALUE_AMOUNT
     )
 
     class Meta:
@@ -126,8 +123,8 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
         queryset=Tag.objects.all()
     )
     cooking_time = serializers.IntegerField(
-        min_value=MIN_VALUE_COOKING_TIME,
-        max_value=MAX_VALUE_COOKING_TIME
+        min_value=settings.MIN_VALUE_COOKING_TIME,
+        max_value=settings.MAX_VALUE_COOKING_TIME
     )
 
     class Meta:

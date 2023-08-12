@@ -2,7 +2,7 @@ from django.urls import path, include
 from django.conf.urls.static import static
 from rest_framework import routers
 
-from foodgram import settings
+from django.conf import settings
 from users.views import UserCustomViewSet
 from api.views import TagsViewSet, IngredientsViewSet, RecipeViewSet
 
