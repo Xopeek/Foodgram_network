@@ -12,7 +12,12 @@ from rest_framework.permissions import IsAuthenticatedOrReadOnly, SAFE_METHODS
 
 from .pagination import CustomPagination
 from .services import RecipeFilter
-from recipes.models import Recipe, Tag, Ingredient, ShoppingCart, Favorite, IngredientRecipe
+from recipes.models import (Recipe,
+                            Tag,
+                            Ingredient,
+                            ShoppingCart,
+                            Favorite,
+                            IngredientRecipe)
 from recipes.serializers import (TagSerializer, IngredientSerializer,
                                  WriteRecipeSerializer, RecipeCreateSerializer,
                                  FavoriteSerializer, ShoppingCartSerializer)
